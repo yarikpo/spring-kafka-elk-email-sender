@@ -1,10 +1,13 @@
 package ua.clamor1s.emailsender.service;
 
+import io.github.cdimascio.dotenv.Dotenv;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaOperations;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import ua.clamor1s.emailsender.data.MessageData;
 import ua.clamor1s.emailsender.data.MessageStatus;
@@ -25,6 +28,10 @@ public class MessageServiceImpl implements MessageService {
 
     private final MessageRepository repository;
 
+    private final JavaMailSender sender;
+
+    private final Dotenv env;
+
 
     @Override
     public ResponseEntity<?> sendMessage(MessageSaveDto message) {
@@ -39,6 +46,15 @@ public class MessageServiceImpl implements MessageService {
         MessageData data = fromMessageDtoToData(message);
         System.out.println("received: " + data.toString());
         saveMessageToDB(data);
+    }
+
+    public void sendMessage(String to, String subject, String text) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(env.get("EMAIL_ADDRESS"));
+        message.setTo(to);
+        message.setSubject(subject);
+        message.setText(text);
+        sender.send(message);
     }
 
     private void saveMessageToDB(MessageData message) {
