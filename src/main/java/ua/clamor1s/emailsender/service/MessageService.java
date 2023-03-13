@@ -7,4 +7,6 @@ public interface MessageService {
 
     ResponseEntity<?> sendMessage(MessageSaveDto message);
 
+    void receiveMessage(MessageSaveDto message);
+
 }

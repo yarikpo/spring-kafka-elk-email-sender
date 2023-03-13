@@ -26,6 +26,11 @@ public class MessageServiceImpl implements MessageService {
                 .body("Message has been successfully sent to Kafka.");
     }
 
+    @Override
+    public void receiveMessage(MessageSaveDto message) {
+        System.out.println("received: " + message.toString());
+    }
+
     private void sendKafkaMessage(MessageSaveDto message) {
         kafkaOperations.send(topic, message.getSender(), message);
     }
