@@ -1,10 +1,11 @@
 package ua.clamor1s.emailsender.config;
 
 import io.github.cdimascio.dotenv.Dotenv;
+import jakarta.mail.Authenticator;
+import jakarta.mail.PasswordAuthentication;
+import jakarta.mail.Session;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.util.Map;
@@ -20,23 +21,26 @@ public class EmailConfig {
     }
 
     @Bean
-    public JavaMailSender getJavaMailSender() {
+    public Session getJavaMailSender() {
         Dotenv env = getEnv();
 
-        JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
-        mailSender.setHost("smtp.gmail.com");
-        mailSender.setPort(587);
+        String username = env.get("EMAIL_ADDRESS");
+        String password = env.get("EMAIL_API_PASSWORD");
 
-        mailSender.setUsername(env.get("EMAIL_ADDRESS"));
-        mailSender.setPassword(env.get("EMAIL_API_PASSWORD"));
-
-        Properties props = mailSender.getJavaMailProperties();
-        props.put("mail.transport.protocol", "smtp");
+        Properties props = new Properties();
         props.put("mail.smtp.auth", "true");
         props.put("mail.smtp.starttls.enable", "true");
-        props.put("mail.debug", "true");
+        props.put("mail.smtp.host", "smtp.gmail.com");
+        props.put("mail.smtp.port", "587");
 
-        return mailSender;
+        Session session = Session.getInstance(props,
+                new Authenticator() {
+                    protected PasswordAuthentication getPasswordAuthentication() {
+                        return new PasswordAuthentication(username, password);
+                }
+        });
+
+        return session;
     }
 
 

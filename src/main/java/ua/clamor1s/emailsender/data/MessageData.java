@@ -26,7 +26,7 @@ public class MessageData {
     @Field(type = FieldType.Keyword)
     private MessageStatus status;
 
-    @Field(type = FieldType.Date)
+    @Field(type = FieldType.Date, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSS", format = {})
     private LocalDateTime timestamp;
 
     @Field(type = FieldType.Text)
@@ -39,5 +39,10 @@ public class MessageData {
     private String sender;
 
     List<String> receivers;
+
+
+
+    @Field(type = FieldType.Text)
+    private String errorMessage;
 
 }

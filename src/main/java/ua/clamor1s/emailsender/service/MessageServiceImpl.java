@@ -1,13 +1,23 @@
 package ua.clamor1s.emailsender.service;
 
+
 import io.github.cdimascio.dotenv.Dotenv;
+import jakarta.mail.Message;
+import jakarta.mail.MessagingException;
+import jakarta.mail.Session;
+import jakarta.mail.Transport;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.SearchHitSupport;
+import org.springframework.data.elasticsearch.core.SearchHits;
+import org.springframework.data.elasticsearch.core.query.Criteria;
+import org.springframework.data.elasticsearch.core.query.CriteriaQuery;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaOperations;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import ua.clamor1s.emailsender.data.MessageData;
 import ua.clamor1s.emailsender.data.MessageStatus;
@@ -15,7 +25,7 @@ import ua.clamor1s.emailsender.dto.MessageSaveDto;
 import ua.clamor1s.emailsender.repository.MessageRepository;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -28,8 +38,9 @@ public class MessageServiceImpl implements MessageService {
 
     private final MessageRepository repository;
 
-    private final JavaMailSender sender;
+    private final ElasticsearchOperations elasticsearchOperations;
 
+    private final Session session;
     private final Dotenv env;
 
 
@@ -46,15 +57,52 @@ public class MessageServiceImpl implements MessageService {
         MessageData data = fromMessageDtoToData(message);
         System.out.println("received: " + data.toString());
         saveMessageToDB(data);
+        sendMessagesWithStatus(MessageStatus.PENDING);
     }
 
-    public void sendMessage(String to, String subject, String text) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(env.get("EMAIL_ADDRESS"));
-        message.setTo(to);
-        message.setSubject(subject);
-        message.setText(text);
-        sender.send(message);
+    private void sendMessagesWithStatus(MessageStatus status) {
+        Criteria criteria = new Criteria("status").is(status);
+        CriteriaQuery query = new CriteriaQuery(criteria);
+        SearchHits<MessageData> hits = elasticsearchOperations.search(query, MessageData.class);
+        List<MessageData> messages = (List<MessageData>) SearchHitSupport.unwrapSearchHits(hits);
+
+        messages.stream()
+                .forEach(this::sendEmailMessage);
+
+    }
+
+    private void sendEmailMessage(MessageData messageData) {
+        String[] recipients = new String[messageData.getReceivers().size()];
+        recipients = messageData.getReceivers().toArray(recipients);
+        String subject = messageData.getSubject() == null ? "" : messageData.getSubject();
+        String text = messageData.getContent() == null ? "" : messageData.getContent();
+
+        try {
+            Message message = new MimeMessage(session);
+            message.setFrom(new InternetAddress(env.get("EMAIL_ADDRESS")));
+            message.setSubject(subject);
+            message.setText(text);
+
+            for (String recipient : recipients) {
+                message.setRecipients(Message.RecipientType.TO,
+                        InternetAddress.parse(recipient));
+                Transport.send(message);
+
+                System.out.println("Email sent to " + recipient);
+            }
+
+            messageData.setStatus(MessageStatus.DONE);
+
+        }
+        catch (MessagingException e) {
+            messageData.setErrorMessage(e.toString());
+            messageData.setStatus(MessageStatus.ERROR);
+        }
+        finally {
+            System.out.println(messageData);
+            repository.save(messageData);
+        }
+
     }
 
     private void saveMessageToDB(MessageData message) {

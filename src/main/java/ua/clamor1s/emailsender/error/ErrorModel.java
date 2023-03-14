@@ -1,6 +1,5 @@
 package ua.clamor1s.emailsender.error;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
