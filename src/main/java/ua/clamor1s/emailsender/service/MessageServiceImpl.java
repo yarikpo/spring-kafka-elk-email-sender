@@ -18,6 +18,8 @@ import org.springframework.data.elasticsearch.core.query.CriteriaQuery;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaOperations;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ua.clamor1s.emailsender.data.MessageData;
 import ua.clamor1s.emailsender.data.MessageStatus;
@@ -58,6 +60,13 @@ public class MessageServiceImpl implements MessageService {
         System.out.println("received: " + data.toString());
         saveMessageToDB(data);
         sendMessagesWithStatus(MessageStatus.PENDING);
+    }
+
+    @Async
+    @Scheduled(fixedDelay = 1000 * 60 * 5)
+    public void scheduledResendErrorMessages() {
+        System.out.println("Scheduled function.");
+        sendMessagesWithStatus(MessageStatus.ERROR);
     }
 
     private void sendMessagesWithStatus(MessageStatus status) {
