@@ -1,11 +1,12 @@
 FROM openjdk:17-alpine
 
-COPY . /java
+RUN apk update && apk upgrade
 
-WORKDIR /java
+WORKDIR /app
+ARG JAR_FILE=target/*.jar
+COPY ${JAR_FILE} ./app.jar
+COPY .env ./.env
 
 EXPOSE 8080
 
-RUN ./mvnw clean package
-
-CMD ["java", "-jar", "target/email-sender-0.0.1-SNAPSHOT.jar"]
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
