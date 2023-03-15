@@ -7,7 +7,6 @@ import org.springframework.data.elasticsearch.client.elc.ElasticsearchConfigurat
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
 
 @Configuration
-@EnableElasticsearchRepositories(basePackages = "ua.clamor1s.emailsender")
 public class ElasticSearchConfig extends ElasticsearchConfiguration {
 
     @Value("${elasticsearch.address}")

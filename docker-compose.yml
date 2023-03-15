@@ -46,6 +46,26 @@ services:
       - elasticsearch
     networks:
       - service
+  java:
+    build: .
+    container_name: appjava
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      spring.elasticsearch.rest:uris: "http://localhost:9200"
+    networks:
+      - service
+    depends_on:
+      - elasticsearch
+      - kafka
+    deploy:
+      restart_policy:
+          condition: on-failure
+          delay: 20s
+          max_attempts: 10
+          window: 60s
 networks:
   service:
     name: service-network

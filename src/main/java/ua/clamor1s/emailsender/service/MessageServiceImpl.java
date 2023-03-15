@@ -80,7 +80,7 @@ public class MessageServiceImpl implements MessageService {
 
     }
 
-    private void sendEmailMessage(MessageData messageData) {
+    public void sendEmailMessage(MessageData messageData) {
         String[] recipients = new String[messageData.getReceivers().size()];
         recipients = messageData.getReceivers().toArray(recipients);
         String subject = messageData.getSubject() == null ? "" : messageData.getSubject();
