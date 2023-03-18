@@ -22,6 +22,11 @@ services:
       - ALLOW_PLAINTEXT_LISTENER=yes
     networks:
       - service
+    healthcheck:
+      test: ["CMD-SHELL", "echo OK"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
     depends_on:
       - zookeeper
   elasticsearch:
@@ -31,6 +36,11 @@ services:
       - discovery.type=single-node
       - ES_JAVA_OPTS=-Xms1g -Xmx1g
       - xpack.security.enabled=false
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
     volumes:
       - ./data:/usr/share/elasticsearch/data
     ports:
@@ -58,14 +68,10 @@ services:
     networks:
       - service
     depends_on:
-      - elasticsearch
-      - kafka
-    deploy:
-      restart_policy:
-          condition: on-failure
-          delay: 20s
-          max_attempts: 10
-          window: 60s
+      kafka:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
 networks:
   service:
     name: service-network
